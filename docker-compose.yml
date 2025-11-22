@@ -20,7 +20,7 @@ services:
       - ./scripts/Start_Airflow.sh:/opt/airflow/scripts/airflow.sh
     ports:
       - "8080:8080" # Airflow UI
-    command: webserver
+
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
       interval: 30s
