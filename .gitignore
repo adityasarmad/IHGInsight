@@ -1,2 +1,6 @@
 *.pyc
 .DS_Store
+*.log
+dbt/target/graph_summary.json
+dbt/target/manifest.json
+dbt/target/run_results.json
