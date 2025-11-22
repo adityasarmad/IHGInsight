@@ -4,7 +4,6 @@ SELECT
         "CustomerID"::Text AS customer_id_raw,
         "Gender" AS gender,
         "Age"::INTEGER AS age,
-
         "Tenure"::INTEGER AS tenure_months,
         "InternetService" AS internet_service,
         "ContractType" AS contract_type,

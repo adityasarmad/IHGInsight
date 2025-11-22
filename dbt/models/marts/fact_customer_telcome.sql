@@ -4,7 +4,7 @@
 ) }}
 
 SELECT
-    -- PII Anonymization: Use SHA256 hashing for a non-reversible identifier
+    -- PII Anonymization: Use SHA256 hashing
     encode(digest(customer_id_raw, 'sha256'), 'hex') AS customer_key,
     gender,
     age,

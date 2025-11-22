@@ -1,4 +1,4 @@
 name: dbt_project # Name of the project
-config-version: 2 # Configuration version (current is 2)
+config-version: 2 # Configuration version
 version: 1.0.0 # Version of the project
 profile: elt_pipeline # Profile name for database connection

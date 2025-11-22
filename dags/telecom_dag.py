@@ -26,18 +26,20 @@ DBT_PROFILE = "elt_pipeline"
 )
 def telecom_elt_pipeline():
     """
-    Hourly ELT pipeline for Telecom Customer Churn dataset.
+    Hourly ELT pipeline for Kaggle Dataset.
     Loads data to Staging, transforms it with dbt, and creates a Reporting Mart.
     """
 
     @task
     def extract_and_load_data():
         """
-        Reads the CSV and loads it into the PostgreSQL staging schema (public.raw_telecom_data).
+        Reads the CSV and loads it into the PostgreSQL staging schema (staging_schema.raw_telecom_data).
         """
         print(f"Reading CSV file from: {CSV_FILE_PATH}")
         if not os.path.exists(CSV_FILE_PATH):
-            # raise FileNotFoundError(f"CSV file not found at: {CSV_FILE_PATH}")
+            # return None
+            # Use Airflow Skip Exception as its clear its not an actual error this is to do with file
+            # We can skip the downstream tasks
             raise AirflowSkipException("File Not Found so.. skipping task.")
 
 
@@ -45,18 +47,18 @@ def telecom_elt_pipeline():
         # Clean column names for SQL compatibility
         df.columns = df.columns.str.replace(r'[^A-Za-z0-9]+', '', regex=True).str.strip()
 
-       ## Fill the Null values
+       ## Fill the Null values and change datatype
         df["Gender"] = df["Gender"].fillna("Unknown")
         df["Age"] = df["Age"].fillna(0).astype(int)
         df["Tenure"] = df["Tenure"].fillna(0).astype(int)
         df["MonthlyCharges"] = pd.to_numeric(df["MonthlyCharges"], errors="coerce").fillna(0.0)
-        # TotalCharges sometimes an empty string; coerce to float or 0
+        # TotalCharges is null or string we get 0
         df["TotalCharges"] = pd.to_numeric(df["TotalCharges"].replace("", pd.NA), errors="coerce").fillna(0.0)
         df["ContractType"] = df["ContractType"].fillna("Unknown")
         df["InternetService"] =df["InternetService"].fillna("Unknown")
         df["Churn"] = df["Churn"].fillna("No")
 
-        # create is female flag
+        # create is female flag and senior flag to know for segmentation in report
         df["is_female"] = df["Gender"].apply(lambda x: 1 if str(x).strip().lower() == "female" else 0)
         df["is_senior"] = df["Age"].apply(lambda x: 1 if x >64 else 0)
 
@@ -84,6 +86,7 @@ def telecom_elt_pipeline():
         )
 
         print("Data load complete.")
+        # Moving the File to Processed Folder so not to reprocess
         os.rename(CSV_FILE_PATH,"/opt/airflow/data/Processed/telecom_custom_data_"+datetime.now().strftime('%Y_%m_%d-%H_%M_%S')+".csv")
 
     # Task to run dbt transformations
@@ -93,7 +96,7 @@ def telecom_elt_pipeline():
         # Change to the dbt project folder
         cd {DBT_PROJECT_DIR}
 
-        # Ensure reporting schema exists before running dbt
+        # To be sure "reporting_schema" schema exists before running dbt
         export PGPASSWORD=hginsight_password
         psql -h airflow-postgres -U hginsight -d hginsight -c "CREATE SCHEMA IF NOT EXISTS reporting_schema;"
         # Test before running dbt

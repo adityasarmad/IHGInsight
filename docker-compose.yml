@@ -4,23 +4,21 @@ services:
   airflow-webserver:
     image: apache/airflow:2.8.3
     container_name: airflow-webserver
-    #restart: always
     environment:
-      # Use a dummy secret key for local testing
       AIRFLOW__WEBSERVER__SECRET_KEY: 'super-secret-key'
       AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow_password@airflow-postgres:5432/airflow # Airflow's internal DB
       AIRFLOW_CONN_POSTGRES_CONN_ID: postgresql://hginsight:hginsight_password@airflow-postgres:5432/hginsight
 
     volumes:
-      - ./dags:/opt/airflow/dags
-      - ./dbt:/opt/airflow/dags/dbt # dbt project is accessible to Airflow
-      - ./data:/opt/airflow/data   # CSV data is accessible
+      - ./dags:/opt/airflow/dags    # dag Folder
+      - ./dbt:/opt/airflow/dags/dbt # dbt project
+      - ./data:/opt/airflow/data   # CSV data
       - ./requirements.txt:/requirements.txt
       - ./scripts/Start_Airflow.sh:/opt/airflow/scripts/airflow.sh
     ports:
       - "8080:8080" # Airflow UI
-
+    command: webserver
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
       interval: 30s
@@ -67,7 +65,7 @@ services:
       MB_SETUP_DATABASE_PASSWORD: hginsight_password
 
       MB_SITE_URL: http://localhost:3000
-    #entrypoint: /bin/bash -c  " java -jar metabase.jar migrate force"
+
     depends_on:
       - postgres
       - airflow-webserver
