@@ -1,0 +1,1 @@
+{"_invocation_id": "0250f353-6662-4ea5-ad4f-b768d87bfe18", "linked": {"0": {"name": "model.dbt_project.stg_telecome_data", "type": "model", "succ": [1]}, "1": {"name": "model.dbt_project.fact_customer_telcome", "type": "model"}}}

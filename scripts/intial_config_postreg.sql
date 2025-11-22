@@ -1,0 +1,4 @@
+CREATE USER airflow WITH PASSWORD 'airflow_password';
+CREATE DATABASE airflow;
+GRANT ALL PRIVILEGES ON DATABASE airflow TO airflow;
+CREATE EXTENSION IF NOT EXISTS pgcrypto;

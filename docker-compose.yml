@@ -1,0 +1,73 @@
+
+services:
+  # 1. Airflow Webserver & Scheduler
+  airflow-webserver:
+    image: apache/airflow:2.8.3
+    container_name: airflow-webserver
+    #restart: always
+    environment:
+      # Use a dummy secret key for local testing
+      AIRFLOW__WEBSERVER__SECRET_KEY: 'super-secret-key'
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow_password@airflow-postgres:5432/airflow # Airflow's internal DB
+      AIRFLOW_CONN_POSTGRES_CONN_ID: postgresql://hginsight:hginsight_password@airflow-postgres:5432/hginsight
+
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./dbt:/opt/airflow/dags/dbt # dbt project is accessible to Airflow
+      - ./data:/opt/airflow/data   # CSV data is accessible
+      - ./requirements.txt:/requirements.txt
+      - ./scripts/Start_Airflow.sh:/opt/airflow/scripts/airflow.sh
+    ports:
+      - "8080:8080" # Airflow UI
+    command: webserver
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 30s
+      retries: 5
+    #entrypoint: /bin/bash -c " pip install -r /requirements.txt && airflow db init && airflow users create --username admin --firstname Aditya --lastname Desai --role Admin --email admin@example.com --password admin && airflow webserver"
+    entrypoint: /bin/bash -c " chmod +x /opt/airflow/scripts/airflow.sh && /opt/airflow/scripts/airflow.sh"
+
+  # 3. Airflow's internal PostgreSQL DB (required by Airflow)
+  postgres:
+    image: postgres:13
+    container_name: airflow-postgres
+    environment:
+      POSTGRES_USER: hginsight
+      POSTGRES_PASSWORD: hginsight_password
+      POSTGRES_DB: hginsight
+    volumes:
+      - ./scripts/intial_config_postreg.sql:/docker-entrypoint-initdb.d/postgres_init_script.sql
+
+
+  # 3. Metabase (Reporting Tool)
+  metabase:
+    image: metabase/metabase:v0.52.6
+    container_name: metabase
+    ports:
+      - 3000:3000
+    environment:
+      # For Metabase internal configurations I used H2 db
+      MB_DB_TYPE: "h2"
+      MB_PASSWORD: 'metabase_password'
+
+      MB_SETUP_ADMIN_EMAIL: aditya@desai.com
+      MB_SETUP_ADMIN_FIRST_NAME: Aditya
+      MB_SETUP_ADMIN_LAST_NAME: DESAI
+      MB_SETUP_ADMIN_PASSWORD: admin
+      MB_SETUP_SITE_NAME: HGInsights_Viz
+      MB_SETUP_TOKEN: skip
+     # Auto-connect for Data present in postgres
+      MB_SETUP_DATABASE_TYPE: postgres
+      MB_SETUP_DATABASE_NAME: hginsight
+      MB_SETUP_DATABASE_HOST: airflow-postgres
+      MB_SETUP_DATABASE_PORT: 5432
+      MB_SETUP_DATABASE_USER: hginsight
+      MB_SETUP_DATABASE_PASSWORD: hginsight_password
+
+      MB_SITE_URL: http://localhost:3000
+    #entrypoint: /bin/bash -c  " java -jar metabase.jar migrate force"
+    depends_on:
+      - postgres
+      - airflow-webserver

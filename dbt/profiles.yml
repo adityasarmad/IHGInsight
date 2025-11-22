@@ -1,0 +1,15 @@
+config:
+  send_anonymous_usage_stats: False
+
+elt_pipeline: # This is the project name used in dbt_project.yml
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: airflow-postgres        # Service name from docker-compose.yml
+      schema: reporting_schema
+      port: 5432
+      user: hginsight
+      password: hginsight_password
+      threads: 4
+      database: hginsight
